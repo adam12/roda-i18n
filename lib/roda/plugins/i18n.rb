@@ -166,7 +166,7 @@ class Roda
           off_filters:  :untranslated,
           on_filters:   :untranslated_html
         )
-        ::R18n.set(i18n)
+        ::R18n.thread_set(i18n)
       end
       
       # methods used within Roda's route block
@@ -229,13 +229,7 @@ class Roda
           # sanity check: set to default locale if not set above
           loc = ::R18n::I18n.default.to_s if loc.nil?
           
-          i18n = ::R18n::I18n.new(
-            loc, 
-            ::R18n.default_places,
-            off_filters:  :untranslated, 
-            on_filters:   :untranslated_html 
-          )
-          ::R18n.set(i18n)
+          ::R18n.thread_set { _generate_i18n(loc) }
         end
         
         # Enables setting temporary :locale blocks within the routing block.
@@ -255,13 +249,7 @@ class Roda
         def i18n_set_locale(locale, &blk)
           locale = ::R18n::I18n.default.to_s if locale.nil?
           
-          i18n = ::R18n::I18n.new(
-            locale, 
-            ::R18n.default_places, 
-            off_filters:  :untranslated, 
-            on_filters:   :untranslated_html
-          )
-          ::R18n.set(i18n)
+          ::R18n.thread_set { _generate_i18n(locale) }
           yield if block_given?
           # return # NB!! needed to enable routes below to work
         end
@@ -297,13 +285,22 @@ class Roda
           on(_match_available_locales_only, opts) do |l|
             loc = l || Roda.opts[:locale]
             session[:locale] = loc unless session[:locale]
-            ::R18n.set(loc)
+
+            ::R18n.thread_set { _generate_i18n(loc) }
             yield if block_given?
             return # NB!! needed to enable routes below to work
           end
         end
         alias_method :i18n_locale, :locale
       
+        def _generate_i18n(locale)
+          ::R18n::I18n.new(
+            locale,
+            ::R18n.default_places,
+            off_filters:  :untranslated,
+            on_filters:   :untranslated
+          )
+        end
       end # /module RequestMethods
       
       
