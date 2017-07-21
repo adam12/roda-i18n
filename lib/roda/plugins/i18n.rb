@@ -321,6 +321,11 @@ class Roda
       module InstanceMethods
         include ::R18n::Helpers
         
+        def call(*)
+          ::R18n.clear_cache! if ENV.fetch('RACK_ENV', 'development') == 'development'
+          super
+        end
+
         def i18n_available_locales
           @available_locales = []
           ::R18n.available_locales.each do |l|
